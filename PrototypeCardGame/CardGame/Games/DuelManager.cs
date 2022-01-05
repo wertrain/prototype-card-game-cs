@@ -30,6 +30,9 @@ namespace PrototypeCardGame.Games
 
         private Systems.StateMachine<DuelManager> _stateMachine;
         
+        /// <summary>
+        /// フェーズ変更 ID
+        /// </summary>
         public enum PhaseTo : int
         {
             Start,
