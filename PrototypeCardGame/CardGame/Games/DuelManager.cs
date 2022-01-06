@@ -23,13 +23,6 @@ namespace PrototypeCardGame.Games
     /// </summary>
     public class DuelManager : Systems.MessageSender
     {
-        private PlayField _playerField;
-        private PlayField _opponentField;
-
-        private List<PlayField> _playingField;
-
-        private Systems.StateMachine<DuelManager> _stateMachine;
-        
         /// <summary>
         /// フェーズ変更 ID
         /// </summary>
@@ -46,6 +39,9 @@ namespace PrototypeCardGame.Games
             Change
         }
 
+        /// <summary>
+        /// コンストラクタ
+        /// </summary>
         public DuelManager()
         {
             _stateMachine = new Systems.StateMachine<DuelManager>(this);
@@ -61,16 +57,27 @@ namespace PrototypeCardGame.Games
             _stateMachine.SetStartState<TurnStartPhase>();
         }
 
+        /// <summary>
+        /// 現在の攻撃側のプレイヤーを取得
+        /// </summary>
+        /// <returns></returns>
         private PlayField GetCurrentOffenser()
         {
             return _playingField[0];
         }
 
+        /// <summary>
+        /// 現在の守備側のプレイヤーを取得
+        /// </summary>
+        /// <returns></returns>
         private PlayField GetCurrentDefenser()
         {
             return _playingField[1];
         }
 
+        /// <summary>
+        /// 攻撃側/守備側を入れ替える
+        /// </summary>
         private void ChangeOffenseAndDefense()
         {
             var field = _playingField[0];
@@ -78,6 +85,10 @@ namespace PrototypeCardGame.Games
             _playingField[1] = field;
         }
 
+        /// <summary>
+        /// フェーズ変更メッセージを送信
+        /// </summary>
+        /// <param name="phase"></param>
         public void SendUpdatePhaseMessage(Phase phase)
         {
             SendMessage(new DuelUpdatePhaseMessage(phase)
@@ -87,6 +98,11 @@ namespace PrototypeCardGame.Games
             });
         }
 
+        /// <summary>
+        /// DuelMessage 送信ユーティリティ
+        /// </summary>
+        /// <typeparam name="MessageType"></typeparam>
+        /// <param name="construct"></param>
         public void SendDuelMessage<MessageType>(Action<MessageType> construct) where MessageType : DuelMessage, new()
         {
             var message = new MessageType()
@@ -98,6 +114,9 @@ namespace PrototypeCardGame.Games
             SendMessage(message);
         }
 
+        /// <summary>
+        /// ターン開始フェーズ
+        /// </summary>
         private class TurnStartPhase : Systems.StateMachine<DuelManager>.State
         {
             protected internal override void Enter()
@@ -107,6 +126,9 @@ namespace PrototypeCardGame.Games
             }
         }
 
+        /// <summary>
+        /// ドローフェーズ
+        /// </summary>
         private class DrawPhase : Systems.StateMachine<DuelManager>.State
         {
             protected internal override void Enter()
@@ -126,6 +148,9 @@ namespace PrototypeCardGame.Games
             protected internal override void Exit() { }
         }
 
+        /// <summary>
+        /// スタンバイフェイズ
+        /// </summary>
         private class StandbyPhase : Systems.StateMachine<DuelManager>.State
         {
             protected internal override void Enter()
@@ -145,6 +170,9 @@ namespace PrototypeCardGame.Games
             protected internal override void Exit() { }
         }
 
+        /// <summary>
+        /// 戦闘フェーズ
+        /// </summary>
         private class BattlePhase : Systems.StateMachine<DuelManager>.State
         {
             protected internal override void Enter()
@@ -204,6 +232,9 @@ namespace PrototypeCardGame.Games
             protected internal override void Exit() { }
         }
 
+        /// <summary>
+        /// ターン終了フェーズ
+        /// </summary>
         private class TurnEndPhase : Systems.StateMachine<DuelManager>.State
         {
             protected internal override void Enter()
@@ -214,6 +245,10 @@ namespace PrototypeCardGame.Games
             protected internal override void Update() { }
             protected internal override void Exit() { }
         }
+
+        /// <summary>
+        /// 勝敗判定フェーズ
+        /// </summary>
 
         private class JudgePhase : Systems.StateMachine<DuelManager>.State
         {
@@ -237,6 +272,9 @@ namespace PrototypeCardGame.Games
             protected internal override void Exit() { }
         }
 
+        /// <summary>
+        /// プレイヤー勝利フェーズ
+        /// </summary>
         private class WinPhase : Systems.StateMachine<DuelManager>.State
         {
             protected internal override void Enter()
@@ -251,6 +289,9 @@ namespace PrototypeCardGame.Games
             protected internal override void Exit() { }
         }
 
+        /// <summary>
+        /// プレイヤー敗北フェーズ
+        /// </summary>
         private class LoosePhase : Systems.StateMachine<DuelManager>.State
         {
             protected internal override void Enter()
@@ -265,6 +306,9 @@ namespace PrototypeCardGame.Games
             protected internal override void Exit() { }
         }
 
+        /// <summary>
+        /// 攻撃/守備入れ替えフェーズ
+        /// </summary>
         private class ChangePhase : Systems.StateMachine<DuelManager>.State
         {
             protected internal override void Enter()
@@ -279,6 +323,9 @@ namespace PrototypeCardGame.Games
             protected internal override void Exit() { }
         }
 
+        /// <summary>
+        /// テストデッキのセットアップ（デバッグ用）
+        /// </summary>
         public void SetupSample()
         {
             {
@@ -318,9 +365,33 @@ namespace PrototypeCardGame.Games
             _playingField.Add(_opponentField);
         }
 
+        /// <summary>
+        /// ステートを進行
+        /// </summary>
         public void Step()
         {
             _stateMachine.Update();
         }
+
+        /// <summary>
+        /// プレイヤーフィールド
+        /// </summary>
+        private PlayField _playerField;
+
+        /// <summary>
+        /// 対戦相手フィールド
+        /// </summary>
+        private PlayField _opponentField;
+
+        /// <summary>
+        /// フィールド管理配列
+        /// 常にインデックス 0 が攻撃側で 1 が守備側
+        /// </summary>
+        private List<PlayField> _playingField;
+
+        /// <summary>
+        /// ステートマシン
+        /// </summary>
+        private Systems.StateMachine<DuelManager> _stateMachine;
     }
 }
