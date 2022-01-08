@@ -1,26 +1,49 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
 namespace PrototypeCardGame.Cards
 {
+    /// <summary>
+    /// カードの基底インターフェース
+    /// </summary>
     interface ICard
     {
+
     }
 
-    public class Card : ICard
+    /// <summary>
+    /// カードの基底クラス
+    /// </summary>
+    public abstract class Card : ICard
     {
+
     }
 
+    /// <summary>
+    /// アイテムカードクラス
+    /// </summary>
     public class ItemCard : Card
     {
+
     }
 
+    /// <summary>
+    /// 戦闘を行うカードクラス
+    /// </summary>
     public abstract class BattlerCard : Card
     {
+        /// <summary>
+        /// 初期ステータスを定義
+        /// </summary>
+        /// <returns></returns>
         public abstract Status GetDefaultStatus();
 
+        /// <summary>
+        /// ステータス
+        /// </summary>
         public class Status
         {
             public int Cost { get; set; }
@@ -28,81 +51,226 @@ namespace PrototypeCardGame.Cards
             public int Attack { get; set; }
         }
 
+        /// <summary>
+        /// 現在のステータスを取得
+        /// </summary>
         public Status CurrentStatus { get; set; }
 
+        /// <summary>
+        /// 初期ステータスを取得
+        /// </summary>
         public Status DefaultStatus { get; set; }
 
-        public BattlerCard()
-        {
-            CurrentStatus = GetDefaultStatus();
-        }
+        /// <summary>
+        /// コンストラクタ
+        /// </summary>
+        public BattlerCard() => CurrentStatus = GetDefaultStatus();
     }
 
-    public class CardDragon : BattlerCard
+    /// <summary>
+    /// 一組のカードクラス
+    /// </summary>
+    public abstract class CardSetBase<CardType> : IEnumerable<CardType> where CardType : Card
     {
-        public override Status GetDefaultStatus()
+        /// <summary>
+        /// カード枚数
+        /// </summary>
+        public int FixedCount { get; private set; }
+
+        /// <summary>
+        /// カード配列
+        /// </summary>
+        public List<CardType> Cards { get; set; }
+
+        /// <summary>
+        /// コンストラクタ
+        /// </summary>
+        public CardSetBase() => Cards = new List<CardType>();
+
+        /// <summary>
+        /// 初期カード数を指定したコンストラクタ
+        /// </summary>
+        /// <param name="num"></param>
+        public CardSetBase(int num)
         {
-            return new Status
+            FixedCount = num;
+            Cards = new List<CardType>(new CardType[num]);
+        }
+
+        /// <summary>
+        /// カード枚数
+        /// </summary>
+        public int Count { get { return Cards.Count; } }
+
+        /// <summary>
+        /// 列挙型を取得
+        /// </summary>
+        /// <returns></returns>
+        public IEnumerator<CardType> GetEnumerator()
+        {
+            return Cards.GetEnumerator();
+        }
+
+        /// <summary>
+        /// 列挙型を取得
+        /// </summary>
+        /// <returns></returns>
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return Cards.GetEnumerator();
+        }
+
+        /// <summary>
+        /// カードを追加
+        /// </summary>
+        /// <param name="card"></param>
+        public bool Add(CardType card)
+        {
+            if (FixedCount == 0)
             {
-                Cost = 3,
-                Life = 5,
-                Attack = 5,
-            };
-        }
-    }
-
-    public class CardSlime : BattlerCard
-    {
-        public override Status GetDefaultStatus()
-        {
-            return new Status
+                Cards.Add(card);
+                return true;
+            }
+            else
             {
-                Cost = 0,
-                Life = 1,
-                Attack = 1,
-            };
+                for (int index = 0; index < FixedCount; ++index)
+                {
+                    if (Cards[index] == null)
+                    {
+                        Cards[index] = card;
+                        return true;
+                    }
+                }
+            }
+            return false;
         }
-    }
 
-    public class CardWarrior : BattlerCard
-    {
-        public override Status GetDefaultStatus()
+        /// <summary>
+        /// カードを削除
+        /// </summary>
+        /// <param name="card"></param>
+        /// <returns></returns>
+        public bool Remove(CardType card)
         {
-            return new Status
+            if (FixedCount == 0)
             {
-                Cost = 1,
-                Life = 2,
-                Attack = 1,
-            };
+                return Cards.Remove(card);
+            }
+            else
+            {
+                for (int index = 0; index < FixedCount; ++index)
+                {
+                    if (Cards[index] == card)
+                    {
+                        Cards[index] = null;
+                        return true;
+                    }
+                }
+            }
+            return false;
         }
-    }
 
-    public class CardWizard : BattlerCard
-    {
-        public override Status GetDefaultStatus()
+        /// <summary>
+        /// インデクサー
+        /// </summary>
+        /// <param name="index"></param>
+        /// <returns></returns>
+        public CardType this[int index]
         {
-            return new Status
-            {
-                Cost = 1,
-                Life = 1,
-                Attack = 2,
-            };
+            set { Cards[index] = value; }
+            get { return Cards[index]; }
         }
-    }
 
-    public class Deck
-    {
-        public List<BattlerCard> Cards { get; set; } = new List<BattlerCard>();
-
+        /// <summary>
+        /// カードをシャッフル
+        /// </summary>
         public void Shuffle()
         {
             var rnd = new Random();
             Cards = Cards.OrderBy(item => rnd.Next()).ToList();
         }
     }
+    
+    /// <summary>
+    /// バトル時のカード
+    /// </summary>
+    public class CardSet : CardSetBase<BattlerCard>
+    {
+        /// <summary>
+        /// コンストラクタ
+        /// </summary>
+        public CardSet() : base() { }
+        
+        /// <summary>
+        /// コンストラクタ
+        /// </summary>
+        /// <param name="num"></param>
+        public CardSet(int num) : base(num) { }
 
+        /// <summary>
+        /// 最も攻撃力の高いカードを取得
+        /// </summary>
+        /// <returns></returns>
+        public BattlerCard GetHighestAttackCard()
+        {
+            var sorted = Cards.OrderBy(x => x.CurrentStatus.Attack);
+            return sorted.First();
+        }
+
+        /// <summary>
+        /// 最もライフの高いカードを取得
+        /// </summary>
+        /// <returns></returns>
+        public BattlerCard GetHighestLifeCard()
+        {
+            var sorted = Cards.OrderBy(x => x.CurrentStatus.Life);
+            return sorted.First();
+        }
+
+        /// <summary>
+        /// 最もコストの高いカードを取得
+        /// </summary>
+        /// <returns></returns>
+        public BattlerCard GetHighestCostCard()
+        {
+            var sorted = Cards.OrderBy(x => x.CurrentStatus.Cost);
+            return sorted.First();
+        }
+    }
+
+    /// <summary>
+    /// デッキクラス
+    /// </summary>
+    public class Deck : CardSetBase<Card>
+    {
+        /// <summary>
+        /// コンストラクタ
+        /// </summary>
+        public Deck() : base() { }
+
+        /// <summary>
+        /// カードをドローできるかを取得
+        /// </summary>
+        public bool IsDraw { get { return Cards.Count > 0; } }
+
+        /// <summary>
+        /// カードをドロー
+        /// </summary>
+        /// <returns>ドローしたカード</returns>
+        public Card Draw()
+        {
+            return Cards.First();
+        }
+    }
+
+    /// <summary>
+    /// カード効果の定義
+    /// </summary>
     public abstract class CardEffect
     {
+        /// <summary>
+        /// 効果発動フェーズ
+        /// </summary>
         enum ActivatedPhase
         {
             GameStart,
@@ -123,6 +291,9 @@ namespace PrototypeCardGame.Cards
             GameEnd,
         }
 
+        /// <summary>
+        /// 効果発動タイプ
+        /// </summary>
         enum ActivatedType
         {
             Once,
@@ -130,6 +301,9 @@ namespace PrototypeCardGame.Cards
             Count,
         }
 
+        /// <summary>
+        /// 効果発動場所
+        /// </summary>
         enum ActivatedPlace
         {
             InHand,
@@ -137,6 +311,9 @@ namespace PrototypeCardGame.Cards
             InDeck
         }
 
+        /// <summary>
+        /// 効果回数
+        /// </summary>
         public int ActivatedCount { get; set; }
     }
 }

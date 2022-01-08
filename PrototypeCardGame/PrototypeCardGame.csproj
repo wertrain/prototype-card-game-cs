@@ -7,7 +7,6 @@
 
   <ItemGroup>
     <Folder Include="CardGame\Systems\" />
-    <Folder Include="CardGame\Cards\" />
   </ItemGroup>
 
 </Project>

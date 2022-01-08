@@ -134,7 +134,7 @@ namespace PrototypeCardGame.Games
             protected internal override void Enter()
             {
                 Context.SendUpdatePhaseMessage(Phase.Draw);
-                var card = Context.GetCurrentOffenser().DrawFromDeck();
+                var card = Context.GetCurrentOffenser().Deck.Draw();
 
                 Context.SendDuelMessage<DuelDrawCardMessage>(message =>
                 {
@@ -330,7 +330,7 @@ namespace PrototypeCardGame.Games
         {
             {
                 Deck deck = new Deck();
-                deck.Cards = new List<BattlerCard>()
+                deck.Cards = new List<Card>()
                 {
                     new CardDragon(),
                     new CardWarrior(),
@@ -346,7 +346,7 @@ namespace PrototypeCardGame.Games
 
             {
                 Deck deck = new Deck();
-                deck.Cards = new List<BattlerCard>()
+                deck.Cards = new List<Card>()
                 {
                     new CardDragon(),
                     new CardSlime(),

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace PrototypeCardGame.Games.AI
@@ -29,7 +30,7 @@ namespace PrototypeCardGame.Games.AI
         public class CardManipulateTask
         {
             public CardManipulation Manipulation { get; set; }
-            public List<int> HandIndices { get; set; } = new List<int>();
+            public List<Cards.BattlerCard> Hands { get; set; } = new List<Cards.BattlerCard>();
             public List<int> FieldIndices { get; set; } = new List<int>();
         }
 
@@ -40,19 +41,19 @@ namespace PrototypeCardGame.Games.AI
         /// <param name="opponent">対戦相手のフィールド</param>
         public GameAI(PlayField player, PlayField opponent)
         {
-            playField = player;
-            opponentField = opponent;
+            _playField = player;
+            _opponentField = opponent;
         }
 
         /// <summary>
         /// AI が操作する対象のフィールド
         /// </summary>
-        protected PlayField playField { get; }
+        protected PlayField _playField;
 
         /// <summary>
         /// 対戦相手のフィールド
         /// </summary>
-        protected PlayField opponentField { get; }
+        protected PlayField _opponentField;
     }
 
     /// <summary>
@@ -68,6 +69,39 @@ namespace PrototypeCardGame.Games.AI
         public SimpleAI(PlayField player, PlayField opponent) : base(player, opponent)
         {
         
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        public List<CardManipulateTask> Think()
+        {
+            var cardManipulateTasks = new List<CardManipulateTask>();
+
+            var target = _playField.Hands.GetHighestAttackCard();
+            if (target != null)
+            {
+                if (target.CurrentStatus.Cost <= 0)
+                {
+                    var task = new CardManipulateTask()
+                    {
+                        Manipulation = CardManipulation.Summon,
+                    };
+                    task.Hands.Add(target);
+                    cardManipulateTasks.Add(task);
+                }
+
+                foreach (var areaCard in _playField.CardAreas)
+                {
+                    if (target.CurrentStatus.Attack > areaCard.CurrentStatus.Attack)
+                    {
+
+                    }
+                }
+            }
+
+            return cardManipulateTasks;
         }
     }
 }
