@@ -10,11 +10,6 @@ namespace PrototypeCardGame.Games
     {
         public static readonly int CardAreaNum = 4;
 
-        public string Name { get; set; }
-
-        public int Life { get; set; }
-        public int TurnCount { get; set; }
-
         public Deck Deck { get; set; }
 
         public CardSet CardAreas { get; private set; } = new CardSet(CardAreaNum);

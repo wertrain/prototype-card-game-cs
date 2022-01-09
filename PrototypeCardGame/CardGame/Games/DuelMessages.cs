@@ -13,12 +13,12 @@ namespace PrototypeCardGame.Games
         /// <summary>
         /// 現在の攻撃手
         /// </summary>
-        public PlayField Offenser { get; set; }
+        public DuelPlayer Offenser { get; set; }
         
         /// <summary>
         /// 現在の守備手
         /// </summary>
-        public PlayField Defenser { get; set; }
+        public DuelPlayer Defenser { get; set; }
     }
 
     /// <summary>
@@ -89,7 +89,7 @@ namespace PrototypeCardGame.Games
     /// </summary>
     public class DuelMatchEndMessage : DuelMessage
     {
-        public PlayField Winner { get; set; }
-        public PlayField Looser { get; set; }
+        public DuelPlayer Winner { get; set; }
+        public DuelPlayer Looser { get; set; }
     }
 }

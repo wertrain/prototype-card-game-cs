@@ -19,6 +19,37 @@ namespace PrototypeCardGame.Games
     }
 
     /// <summary>
+    /// デュエルプレイヤー
+    /// </summary>
+    public class DuelPlayer
+    {
+        /// <summary>
+        /// プレイヤー名
+        /// </summary>
+        public string Name { get; set; }
+
+        /// <summary>
+        /// ライフポイント
+        /// </summary>
+        public int Life { get; set; }
+
+        /// <summary>
+        /// 経過ターン数
+        /// </summary>
+        public int TurnCount { get; set; }
+
+        /// <summary>
+        /// プレイヤーフィールド
+        /// </summary>
+        public PlayField Field { get; set; }
+
+        /// <summary>
+        /// 思考 AI
+        /// </summary>
+        public Games.AI.GameAI AI { get; set; }
+    }
+
+    /// <summary>
     /// デュエル管理クラス
     /// </summary>
     public class DuelManager : Systems.MessageSender
@@ -61,7 +92,7 @@ namespace PrototypeCardGame.Games
         /// 現在の攻撃側のプレイヤーを取得
         /// </summary>
         /// <returns></returns>
-        private PlayField GetCurrentOffenser()
+        private DuelPlayer GetCurrentOffenser()
         {
             return _playingField[0];
         }
@@ -70,7 +101,7 @@ namespace PrototypeCardGame.Games
         /// 現在の守備側のプレイヤーを取得
         /// </summary>
         /// <returns></returns>
-        private PlayField GetCurrentDefenser()
+        private DuelPlayer GetCurrentDefenser()
         {
             return _playingField[1];
         }
@@ -134,7 +165,7 @@ namespace PrototypeCardGame.Games
             protected internal override void Enter()
             {
                 Context.SendUpdatePhaseMessage(Phase.Draw);
-                var card = Context.GetCurrentOffenser().Deck.Draw();
+                var card = Context.GetCurrentOffenser().Field.Deck.Draw();
 
                 Context.SendDuelMessage<DuelDrawCardMessage>(message =>
                 {
@@ -156,11 +187,11 @@ namespace PrototypeCardGame.Games
             protected internal override void Enter()
             {
                 Context.SendUpdatePhaseMessage(Phase.Standby);
-                if (Context.GetCurrentOffenser().SetCardInArea(0, 0))
+                if (Context.GetCurrentOffenser().Field.SetCardInArea(0, 0))
                 {
                     Context.SendDuelMessage<DuelSetCardInAreaMessage>(message =>
                     {
-                        message.Card = Context.GetCurrentOffenser().CardAreas[0];
+                        message.Card = Context.GetCurrentOffenser().Field.CardAreas[0];
                         message.AreaIndex = 0;
                     });
                 }
@@ -179,12 +210,12 @@ namespace PrototypeCardGame.Games
             {
                 Context.SendUpdatePhaseMessage(Phase.Battle);
 
-                for (int index = 0; index < Context.GetCurrentOffenser().CardAreas.Count; ++index)
+                for (int index = 0; index < Context.GetCurrentOffenser().Field.CardAreas.Count; ++index)
                 {
                     var offense = Context.GetCurrentOffenser();
                     var defense = Context.GetCurrentDefenser();
-                    var offenseCard = offense.CardAreas[index];
-                    var defenseCard = defense.CardAreas[index];
+                    var offenseCard = offense.Field.CardAreas[index];
+                    var defenseCard = defense.Field.CardAreas[index];
 
                     if (offenseCard == null) continue;
 
@@ -206,7 +237,7 @@ namespace PrototypeCardGame.Games
                         
                         if (defenseCard.CurrentStatus.Life <= 0)
                         {
-                            defense.AreaCardToCemetery(index);
+                            defense.Field.AreaCardToCemetery(index);
                             Context.SendDuelMessage<DuelDeadCardMessage>(message =>
                             {
                                 message.Card = offenseCard;
@@ -254,11 +285,11 @@ namespace PrototypeCardGame.Games
         {
             protected internal override void Enter()
             {
-                if (Context._opponentField.Life <= 0)
+                if (Context._opponent.Life <= 0)
                 {
                     Context._stateMachine.SendEvent((int)PhaseTo.Win);
                 }
-                else if (Context._playerField.Life <= 0)
+                else if (Context._player.Life <= 0)
                 {
                     Context._stateMachine.SendEvent((int)PhaseTo.Loose);
                 }
@@ -281,8 +312,8 @@ namespace PrototypeCardGame.Games
             {
                 Context.SendDuelMessage<DuelMatchEndMessage>(message =>
                 {
-                    message.Winner = Context._playerField;
-                    message.Looser = Context._opponentField;
+                    message.Winner = Context._player;
+                    message.Looser = Context._opponent;
                 });
             }
             protected internal override void Update() { }
@@ -298,8 +329,8 @@ namespace PrototypeCardGame.Games
             {
                 Context.SendDuelMessage<DuelMatchEndMessage>(message =>
                 {
-                    message.Winner = Context._opponentField;
-                    message.Looser = Context._playerField;
+                    message.Winner = Context._opponent;
+                    message.Looser = Context._player;
                 });
             }
             protected internal override void Update() { }
@@ -339,9 +370,13 @@ namespace PrototypeCardGame.Games
                     new CardSlime()
                 };
                 deck.Shuffle();
-                _playerField = new PlayField(deck);
-                _playerField.Life = 10;
-                _playerField.Name = "Player";
+
+                _player = new DuelPlayer()
+                {
+                    Name = "Player",
+                    Field = new PlayField(deck),
+                    Life = 10
+                };
             }
 
             {
@@ -355,14 +390,18 @@ namespace PrototypeCardGame.Games
                     new CardSlime()
                 };
                 deck.Shuffle();
-                _opponentField = new PlayField(deck);
-                _opponentField.Life = 10;
-                _opponentField.Name = "Opponent";
+
+                _opponent = new DuelPlayer()
+                {
+                    Name = "Opponent",
+                    Field = new PlayField(deck),
+                    Life = 10
+                };
             }
 
-            _playingField = new List<PlayField>();
-            _playingField.Add(_playerField);
-            _playingField.Add(_opponentField);
+            _playingField = new List<DuelPlayer>();
+            _playingField.Add(_player);
+            _playingField.Add(_opponent);
         }
 
         /// <summary>
@@ -376,18 +415,18 @@ namespace PrototypeCardGame.Games
         /// <summary>
         /// プレイヤーフィールド
         /// </summary>
-        private PlayField _playerField;
+        private DuelPlayer _player;
 
         /// <summary>
         /// 対戦相手フィールド
         /// </summary>
-        private PlayField _opponentField;
+        private DuelPlayer _opponent;
 
         /// <summary>
         /// フィールド管理配列
         /// 常にインデックス 0 が攻撃側で 1 が守備側
         /// </summary>
-        private List<PlayField> _playingField;
+        private List<DuelPlayer> _playingField;
 
         /// <summary>
         /// ステートマシン

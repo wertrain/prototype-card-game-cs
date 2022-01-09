@@ -20,8 +20,25 @@ namespace PrototypeCardGame.Games.AI
         /// </summary>
         public enum CardManipulation
         {
+            /// <summary>
+            /// 何も行わない
+            /// </summary>
             None,
+
+            /// <summary>
+            /// 召喚
+            /// </summary>
             Summon,
+
+            /// <summary>
+            /// フィールドから召喚コストとして破棄
+            /// </summary>
+            Sacrifice,
+
+            /// <summary>
+            /// 手札、もしくはデッキから直接破棄
+            /// </summary>
+            Discard
         }
 
         /// <summary>
@@ -30,7 +47,7 @@ namespace PrototypeCardGame.Games.AI
         public class CardManipulateTask
         {
             public CardManipulation Manipulation { get; set; }
-            public List<Cards.BattlerCard> Hands { get; set; } = new List<Cards.BattlerCard>();
+            public List<Cards.BattlerCard> Cards { get; set; } = new List<Cards.BattlerCard>();
             public List<int> FieldIndices { get; set; } = new List<int>();
         }
 
@@ -39,21 +56,21 @@ namespace PrototypeCardGame.Games.AI
         /// </summary>
         /// <param name="player">AI が操作する対象のフィールド</param>
         /// <param name="opponent">対戦相手のフィールド</param>
-        public GameAI(PlayField player, PlayField opponent)
+        public GameAI(DuelPlayer player, DuelPlayer opponent)
         {
-            _playField = player;
-            _opponentField = opponent;
+            _player = player;
+            _opponent = opponent;
         }
 
         /// <summary>
         /// AI が操作する対象のフィールド
         /// </summary>
-        protected PlayField _playField;
+        protected DuelPlayer _player;
 
         /// <summary>
         /// 対戦相手のフィールド
         /// </summary>
-        protected PlayField _opponentField;
+        protected DuelPlayer _opponent;
     }
 
     /// <summary>
@@ -66,7 +83,7 @@ namespace PrototypeCardGame.Games.AI
         /// </summary>
         /// <param name="player"></param>
         /// <param name="opponent"></param>
-        public SimpleAI(PlayField player, PlayField opponent) : base(player, opponent)
+        public SimpleAI(DuelPlayer player, DuelPlayer opponent) : base(player, opponent)
         {
         
         }
@@ -79,25 +96,37 @@ namespace PrototypeCardGame.Games.AI
         {
             var cardManipulateTasks = new List<CardManipulateTask>();
 
-            var target = _playField.Hands.GetHighestAttackCard();
+            var target = _player.Field.Hands.GetHighestAttackCard();
+            
             if (target != null)
             {
-                if (target.CurrentStatus.Cost <= 0)
+                int cost = target.CurrentStatus.Cost;
+
+                if (target.CurrentStatus.Cost > 0)
                 {
-                    var task = new CardManipulateTask()
+                    var sacrificeTask = new CardManipulateTask();
+                    sacrificeTask.Manipulation = CardManipulation.Sacrifice;
+                    foreach (var areaCard in _player.Field.CardAreas)
                     {
-                        Manipulation = CardManipulation.Summon,
-                    };
-                    task.Hands.Add(target);
-                    cardManipulateTasks.Add(task);
+                        if (target.CurrentStatus.Attack > areaCard.CurrentStatus.Attack)
+                        {
+                            sacrificeTask.Cards.Add(areaCard);
+                            if (--cost >= 0)
+                            {
+                                cardManipulateTasks.Add(sacrificeTask);
+                                break;
+                            }
+                        }
+                    }
                 }
 
-                foreach (var areaCard in _playField.CardAreas)
+                if (cost == 0)
                 {
-                    if (target.CurrentStatus.Attack > areaCard.CurrentStatus.Attack)
+                    cardManipulateTasks.Add(new CardManipulateTask()
                     {
-
-                    }
+                        Manipulation = CardManipulation.Summon,
+                        Cards = new List<Cards.BattlerCard>() { target }
+                    });
                 }
             }
 
