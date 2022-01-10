@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using PrototypeCardGame.Cards;
 
@@ -46,7 +47,7 @@ namespace PrototypeCardGame.Games
         /// <summary>
         /// 思考 AI
         /// </summary>
-        public Games.AI.GameAI AI { get; set; }
+        public AI.GameAI AI { get; set; }
     }
 
     /// <summary>
@@ -165,7 +166,7 @@ namespace PrototypeCardGame.Games
             protected internal override void Enter()
             {
                 Context.SendUpdatePhaseMessage(Phase.Draw);
-                var card = Context.GetCurrentOffenser().Field.Deck.Draw();
+                var card = Context.GetCurrentOffenser().Field.DrawFromDeck();
 
                 Context.SendDuelMessage<DuelDrawCardMessage>(message =>
                 {
@@ -187,14 +188,46 @@ namespace PrototypeCardGame.Games
             protected internal override void Enter()
             {
                 Context.SendUpdatePhaseMessage(Phase.Standby);
-                if (Context.GetCurrentOffenser().Field.SetCardInArea(0, 0))
+
+                var offenser = Context.GetCurrentOffenser();
+
+                if (offenser.AI == null)
                 {
-                    Context.SendDuelMessage<DuelSetCardInAreaMessage>(message =>
+                    if (offenser.Field.SetCardInArea(0, 0))
                     {
-                        message.Card = Context.GetCurrentOffenser().Field.CardAreas[0];
-                        message.AreaIndex = 0;
-                    });
+                        Context.SendDuelMessage<DuelSetCardInAreaMessage>(message =>
+                        {
+                            message.Card = offenser.Field.CardAreas[0];
+                            message.AreaIndex = 0;
+                        });
+                    }
                 }
+                else
+                {
+                    var tasks = offenser.AI.Think();
+                    foreach (var task in tasks)
+                    {
+                        switch(task.Manipulation)
+                        {
+                            case AI.GameAI.CardManipulation.Sacrifice:
+                                Context.SendDuelMessage<DuelSacrificeCardInAreaMessage>(message =>
+                                {
+                                    message.Cards = task.Cards;
+                                });
+                                break;
+
+                            case AI.GameAI.CardManipulation.Summon:
+                                Context.SendDuelMessage<DuelSetCardInAreaMessage>(message =>
+                                {
+                                    message.Card = task.Cards.First();
+                                    message.AreaIndex = task.FieldIndices.First();
+                                });
+                                break;
+                        }
+                    }
+                }
+
+
                 Context._stateMachine.SendEvent((int)PhaseTo.Battle);
             }
             protected internal override void Update() { }
@@ -397,6 +430,7 @@ namespace PrototypeCardGame.Games
                     Field = new PlayField(deck),
                     Life = 10
                 };
+                _opponent.AI = new AI.SimpleAI(_opponent, _player);
             }
 
             _playingField = new List<DuelPlayer>();

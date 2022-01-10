@@ -21,6 +21,16 @@ namespace PrototypeCardGame.Games
 
         public PlayField(Deck deck) => Deck = deck;
 
+        public Card DrawFromDeck()
+        {
+            var card = Deck.Draw();
+            if (card == null) return null;
+
+            Hands.Add((BattlerCard)card);
+            return card;
+
+        }
+
         public bool SetCardInArea(int handIndex, int areaIndex)
         {
             if (handIndex < 0 || handIndex >= Hands.Count) return false;

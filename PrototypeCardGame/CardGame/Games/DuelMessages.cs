@@ -64,6 +64,14 @@ namespace PrototypeCardGame.Games
     }
 
     /// <summary>
+    /// カードをコストとして破棄したときのメッセージ
+    /// </summary>
+    public class DuelSacrificeCardInAreaMessage : DuelMessage
+    {
+        public List<Card> Cards { get; set; }
+    }
+
+    /// <summary>
     /// カードがセットされた時のメッセージ
     /// </summary>
     public class DuelSetCardInAreaMessage : DuelMessage

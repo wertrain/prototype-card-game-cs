@@ -171,6 +171,31 @@ namespace PrototypeCardGame.Cards
         }
 
         /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+
+        public List<int> GetEmptyIndices()
+        {
+            if (FixedCount == 0)
+            {
+                return null;
+            }
+            else
+            {
+                var indices = new List<int>();
+                for (int index = 0; index < FixedCount; ++index)
+                {
+                    if (Cards[index] == null)
+                    {
+                        indices.Add(index);
+                    }
+                }
+                return indices;
+            }
+        }
+
+        /// <summary>
         /// インデクサー
         /// </summary>
         /// <param name="index"></param>
@@ -214,7 +239,7 @@ namespace PrototypeCardGame.Cards
         public BattlerCard GetHighestAttackCard()
         {
             var sorted = Cards.OrderBy(x => x.CurrentStatus.Attack);
-            return sorted.First();
+            return sorted.FirstOrDefault();
         }
 
         /// <summary>
@@ -224,7 +249,7 @@ namespace PrototypeCardGame.Cards
         public BattlerCard GetHighestLifeCard()
         {
             var sorted = Cards.OrderBy(x => x.CurrentStatus.Life);
-            return sorted.First();
+            return sorted.FirstOrDefault();
         }
 
         /// <summary>
@@ -234,7 +259,7 @@ namespace PrototypeCardGame.Cards
         public BattlerCard GetHighestCostCard()
         {
             var sorted = Cards.OrderBy(x => x.CurrentStatus.Cost);
-            return sorted.First();
+            return sorted.FirstOrDefault();
         }
     }
 
@@ -259,7 +284,10 @@ namespace PrototypeCardGame.Cards
         /// <returns>ドローしたカード</returns>
         public Card Draw()
         {
-            return Cards.First();
+            var card = Cards.FirstOrDefault();
+            if (card == null) return null;
+            Cards.Remove(card);
+            return card;
         }
     }
 
