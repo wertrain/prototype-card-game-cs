@@ -217,17 +217,18 @@ namespace PrototypeCardGame.Games
                                 break;
 
                             case AI.GameAI.CardManipulation.Summon:
-                                Context.SendDuelMessage<DuelSetCardInAreaMessage>(message =>
+                                if (offenser.Field.SetCardInArea((BattlerCard)task.Cards.First(), task.FieldIndices.First()))
                                 {
-                                    message.Card = task.Cards.First();
-                                    message.AreaIndex = task.FieldIndices.First();
-                                });
+                                    Context.SendDuelMessage<DuelSetCardInAreaMessage>(message =>
+                                    {
+                                        message.Card = task.Cards.First();
+                                        message.AreaIndex = task.FieldIndices.First();
+                                    });
+                                }
                                 break;
                         }
                     }
                 }
-
-
                 Context._stateMachine.SendEvent((int)PhaseTo.Battle);
             }
             protected internal override void Update() { }
