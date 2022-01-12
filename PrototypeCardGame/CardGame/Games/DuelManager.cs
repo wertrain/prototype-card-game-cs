@@ -431,8 +431,10 @@ namespace PrototypeCardGame.Games
                     Field = new PlayField(deck),
                     Life = 10
                 };
-                _opponent.AI = new AI.SimpleAI(_opponent, _player);
             }
+
+            _player.AI = new AI.SimpleAI(_player, _opponent);
+            _opponent.AI = new AI.SimpleAI(_opponent, _player);
 
             _playingField = new List<DuelPlayer>();
             _playingField.Add(_player);
