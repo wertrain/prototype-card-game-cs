@@ -49,6 +49,7 @@ namespace PrototypeCardGame.Games.AI
             public CardManipulation Manipulation { get; set; }
             public List<Cards.Card> Cards { get; set; } = new List<Cards.Card>();
             public List<int> FieldIndices { get; set; } = new List<int>();
+            public CardManipulateTask(CardManipulation manipulation) => Manipulation = manipulation;
         }
 
         /// <summary>
@@ -87,7 +88,7 @@ namespace PrototypeCardGame.Games.AI
         /// <param name="opponent"></param>
         public SimpleAI(DuelPlayer player, DuelPlayer opponent) : base(player, opponent)
         {
-        
+            CardAttributes = new Dictionary<Cards.Card, Attribute>();
         }
 
         /// <summary>
@@ -98,54 +99,192 @@ namespace PrototypeCardGame.Games.AI
         {
             var cardManipulateTasks = new List<CardManipulateTask>();
 
-            // 最も攻撃力の高いカードを召喚する
-            var target = _player.Field.Hands.GetHighestAttackCard();
-            
-            if (target != null)
+            var tasks = MakeSummonTasks();
+            while (tasks != null)
             {
-                int cost = target.CurrentStatus.Cost;
-
-                var indices = _player.Field.CardAreas.GetEmptyIndices();
-
-                if (target.CurrentStatus.Cost > 0)
-                {
-                    indices = new List<int>();
-
-                    var sacrificeTask = new CardManipulateTask();
-                    sacrificeTask.Manipulation = CardManipulation.Sacrifice;
-                    for (int index = 0; index < _player.Field.CardAreas.Count; ++index)
-                    {
-                        var areaCard = _player.Field.CardAreas[index];
-                        if (areaCard == null)
-                        {
-                            indices.Add(index);
-                            continue;
-                        }
-                        if (target.CurrentStatus.Attack > areaCard.CurrentStatus.Attack)
-                        {
-                            indices.Add(index);
-                            sacrificeTask.Cards.Add(areaCard);
-                            if (--cost >= 0)
-                            {
-                                cardManipulateTasks.Add(sacrificeTask);
-                                break;
-                            }
-                        }
-                    }
-                }
-
-                if (cost == 0 && indices.Count > 0)
-                {
-                    cardManipulateTasks.Add(new CardManipulateTask()
-                    {
-                        Manipulation = CardManipulation.Summon,
-                        Cards = new List<Cards.Card>() { target },
-                        FieldIndices = new List<int>() { indices.First() }
-                    });
-                }
+                cardManipulateTasks.AddRange(tasks);
+                tasks = MakeSummonTasks();
             }
 
             return cardManipulateTasks;
         }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        private List<CardManipulateTask> MakeSummonTasks()
+        {
+            Cards.BattlerCard targetCard = null;
+            
+            foreach (var card in _player.Field.Hands.GetHighestAttackCards())
+            {
+                if (HasAttributes(card, Attribute.Summoned))
+                {
+                    continue;
+                }
+
+                targetCard = card;
+            }
+
+            if (targetCard == null)
+            {
+                return null;
+            }
+
+            var tasks = new List<CardManipulateTask>();
+
+            var summonTask = new CardManipulateTask(CardManipulation.Summon);
+            summonTask.Cards.Add(targetCard);
+
+            var indices = new List<int>();
+
+            if (targetCard.CurrentStatus.Cost > 0)
+            {
+                var sacrificesTask = MakeSacrificesTask(targetCard, 
+                    card => card.CurrentStatus.Attack < targetCard.CurrentStatus.Attack
+                );
+
+                if (sacrificesTask == null)
+                {
+                    return null;
+                }
+
+                indices.AddRange(sacrificesTask.FieldIndices);
+                tasks.Add(sacrificesTask);
+            }
+
+            var index = GetSummonIndex(targetCard, indices);
+            
+            if (index == null)
+            {
+                return null;
+            }
+
+            summonTask.FieldIndices.Add(index.Value);
+            tasks.Add(summonTask);
+            AddAttributes(targetCard, Attribute.Summoned);
+
+            return tasks;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="target"></param>
+        /// <param name="comparison"></param>
+        /// <returns></returns>
+        private CardManipulateTask MakeSacrificesTask(Cards.BattlerCard target, Func<Cards.BattlerCard, bool> comparison)
+        {
+            var indices = new List<int>();
+            var sacrificeTask = new CardManipulateTask(CardManipulation.Sacrifice);
+            var cost = target.CurrentStatus.Cost;
+
+            for (int index = 0; index < _player.Field.CardAreas.Count; ++index)
+            {
+                var areaCard = _player.Field.CardAreas[index];
+
+                if (areaCard == null)
+                {
+                    continue;
+                }
+
+                if (HasAttributes(areaCard, Attribute.Sacrificed))
+                {
+                    continue;
+                }
+
+                if (comparison(areaCard))
+                {
+                    indices.Add(index);
+                    sacrificeTask.Cards.Add(areaCard);
+                    sacrificeTask.FieldIndices = indices;
+
+                    if (--cost >= 0)
+                    {
+                        foreach (var card in sacrificeTask.Cards)
+                        {
+                            AddAttributes(card, Attribute.Sacrificed);
+                        }
+                        return sacrificeTask;
+                    }
+                }
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="summonCard"></param>
+        /// <param name="sacrificeIndices"></param>
+        /// <returns></returns>
+        private int? GetSummonIndex(Cards.BattlerCard summonCard, List<int> sacrificeIndices)
+        {
+            var indices = _player.Field.CardAreas.GetEmptyIndices();
+            indices.AddRange(sacrificeIndices);
+
+            for (int index = 0; index < _opponent.Field.CardAreas.Count; ++index)
+            {
+                var area = _opponent.Field.CardAreas[index];
+
+                // 敵側にカードがなく、こちらも召喚可能であれば
+                if (area == null && indices.Contains(index))
+                {
+                    return index;
+                }
+            }
+
+            for (int index = 0; index < _opponent.Field.CardAreas.Count; ++index)
+            {
+                var area = _opponent.Field.CardAreas[index];
+
+                // 召喚するカードの方が攻撃力が高ければ
+                if (area != null && area.CurrentStatus.Attack < summonCard.CurrentStatus.Attack)
+                {
+                    return index;
+                }
+            }
+
+            return null;
+        }
+
+        private bool AddAttributes(Cards.Card card, Attribute attribute)
+        {
+            if (CardAttributes.ContainsKey(card))
+            {
+                CardAttributes[card] = CardAttributes[card] | attribute;
+            }
+            else
+            {
+                CardAttributes.Add(card, attribute);
+            }
+
+            return true;
+        }
+
+        private bool HasAttributes(Cards.Card card, Attribute attribute)
+        {
+            if (CardAttributes.ContainsKey(card))
+            {
+                return CardAttributes[card].HasFlag(attribute);
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        [Flags]
+        enum Attribute
+        {
+            Sacrificed = 1 << 0,
+            Summoned = 1 << 1,
+        };
+
+        /// <summary>
+        /// 
+        /// </summary>
+        private Dictionary<Cards.Card, Attribute> CardAttributes;
     }
 }

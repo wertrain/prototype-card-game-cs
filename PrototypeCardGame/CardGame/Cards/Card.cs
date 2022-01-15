@@ -238,8 +238,16 @@ namespace PrototypeCardGame.Cards
         /// <returns></returns>
         public BattlerCard GetHighestAttackCard()
         {
-            var sorted = Cards.OrderBy(x => x.CurrentStatus.Attack);
-            return sorted.FirstOrDefault();
+            return GetHighestAttackCards().FirstOrDefault();
+        }
+
+        /// <summary>
+        /// 最も攻撃力の高いカードを取得
+        /// </summary>
+        /// <returns></returns>
+        public IEnumerable<BattlerCard> GetHighestAttackCards()
+        {
+            return Cards.OrderBy(x => x.CurrentStatus.Attack);
         }
 
         /// <summary>
@@ -248,8 +256,16 @@ namespace PrototypeCardGame.Cards
         /// <returns></returns>
         public BattlerCard GetHighestLifeCard()
         {
-            var sorted = Cards.OrderBy(x => x.CurrentStatus.Life);
-            return sorted.FirstOrDefault();
+            return GetHighestLifeCards().FirstOrDefault();
+        }
+
+        /// <summary>
+        /// 最もライフの高いカードを取得
+        /// </summary>
+        /// <returns></returns>
+        public IEnumerable<BattlerCard> GetHighestLifeCards()
+        {
+            return Cards.OrderBy(x => x.CurrentStatus.Life);
         }
 
         /// <summary>
@@ -258,8 +274,7 @@ namespace PrototypeCardGame.Cards
         /// <returns></returns>
         public BattlerCard GetHighestCostCard()
         {
-            var sorted = Cards.OrderBy(x => x.CurrentStatus.Cost);
-            return sorted.FirstOrDefault();
+            return GetHighestLifeCards().FirstOrDefault();
         }
     }
 
