@@ -99,11 +99,13 @@ namespace PrototypeCardGame.Games.AI
         {
             var cardManipulateTasks = new List<CardManipulateTask>();
 
-            var tasks = MakeSummonTasks();
+            var usedFieldIndices = new List<int>();
+
+            var tasks = MakeSummonTasks(usedFieldIndices);
             while (tasks != null)
             {
                 cardManipulateTasks.AddRange(tasks);
-                tasks = MakeSummonTasks();
+                tasks = MakeSummonTasks(usedFieldIndices);
             }
 
             return cardManipulateTasks;
@@ -113,7 +115,7 @@ namespace PrototypeCardGame.Games.AI
         /// 
         /// </summary>
         /// <returns></returns>
-        private List<CardManipulateTask> MakeSummonTasks()
+        private List<CardManipulateTask> MakeSummonTasks(List<int> usedFieldIndices)
         {
             Cards.BattlerCard targetCard = null;
             
@@ -125,6 +127,7 @@ namespace PrototypeCardGame.Games.AI
                 }
 
                 targetCard = card;
+                break;
             }
 
             if (targetCard == null)
@@ -154,7 +157,7 @@ namespace PrototypeCardGame.Games.AI
                 tasks.Add(sacrificesTask);
             }
 
-            var index = GetSummonIndex(targetCard, indices);
+            var index = GetSummonIndex(targetCard, indices, usedFieldIndices);
             
             if (index == null)
             {
@@ -162,6 +165,7 @@ namespace PrototypeCardGame.Games.AI
             }
 
             summonTask.FieldIndices.Add(index.Value);
+            usedFieldIndices.Add(index.Value);
             tasks.Add(summonTask);
             AddAttributes(targetCard, Attribute.Summoned);
 
@@ -200,7 +204,7 @@ namespace PrototypeCardGame.Games.AI
                     sacrificeTask.Cards.Add(areaCard);
                     sacrificeTask.FieldIndices = indices;
 
-                    if (--cost >= 0)
+                    if (--cost <= 0)
                     {
                         foreach (var card in sacrificeTask.Cards)
                         {
@@ -219,13 +223,18 @@ namespace PrototypeCardGame.Games.AI
         /// <param name="summonCard"></param>
         /// <param name="sacrificeIndices"></param>
         /// <returns></returns>
-        private int? GetSummonIndex(Cards.BattlerCard summonCard, List<int> sacrificeIndices)
+        private int? GetSummonIndex(Cards.BattlerCard summonCard, List<int> sacrificeIndices, List<int> usedIndices)
         {
             var indices = _player.Field.CardAreas.GetEmptyIndices();
             indices.AddRange(sacrificeIndices);
 
             for (int index = 0; index < _opponent.Field.CardAreas.Count; ++index)
             {
+                if (usedIndices.Contains(index))
+                {
+                    continue;
+                }
+
                 var area = _opponent.Field.CardAreas[index];
 
                 // 敵側にカードがなく、こちらも召喚可能であれば
@@ -237,6 +246,11 @@ namespace PrototypeCardGame.Games.AI
 
             for (int index = 0; index < _opponent.Field.CardAreas.Count; ++index)
             {
+                if (usedIndices.Contains(index))
+                {
+                    continue;
+                }
+
                 var area = _opponent.Field.CardAreas[index];
 
                 // 召喚するカードの方が攻撃力が高ければ
@@ -246,9 +260,31 @@ namespace PrototypeCardGame.Games.AI
                 }
             }
 
+            for (int index = 0; index < _opponent.Field.CardAreas.Count; ++index)
+            {
+                if (usedIndices.Contains(index))
+                {
+                    continue;
+                }
+
+                var area = _player.Field.CardAreas[index];
+
+                // 空きフィールドであれば
+                if (area == null)
+                {
+                    return index;
+                }
+            }
+
             return null;
         }
 
+        /// <summary>
+        /// 属性の付与
+        /// </summary>
+        /// <param name="card"></param>
+        /// <param name="attribute"></param>
+        /// <returns></returns>
         private bool AddAttributes(Cards.Card card, Attribute attribute)
         {
             if (CardAttributes.ContainsKey(card))
@@ -263,6 +299,12 @@ namespace PrototypeCardGame.Games.AI
             return true;
         }
 
+        /// <summary>
+        /// 属性が付与されているか
+        /// </summary>
+        /// <param name="card"></param>
+        /// <param name="attribute"></param>
+        /// <returns></returns>
         private bool HasAttributes(Cards.Card card, Attribute attribute)
         {
             if (CardAttributes.ContainsKey(card))
@@ -285,6 +327,6 @@ namespace PrototypeCardGame.Games.AI
         /// <summary>
         /// 
         /// </summary>
-        private Dictionary<Cards.Card, Attribute> CardAttributes;
+        private Dictionary<Cards.Card, Attribute> CardAttributes { get; set; }
     }
 }

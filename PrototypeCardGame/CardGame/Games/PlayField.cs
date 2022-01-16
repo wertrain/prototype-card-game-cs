@@ -66,5 +66,18 @@ namespace PrototypeCardGame.Games
             Cemetery.Add(card);
             CardAreas[areaIndex] = null;
         }
+
+        public void AreaCardToCemetery(BattlerCard card)
+        {
+            for (int index = 0; index < CardAreas.Count; ++index)
+            {
+                if (CardAreas[index] == card)
+                {
+                    Cemetery.Add(card);
+                    CardAreas[index] = null;
+                    break;
+                }
+            }
+        }
     }
 }

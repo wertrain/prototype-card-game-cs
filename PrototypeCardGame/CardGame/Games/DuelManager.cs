@@ -56,6 +56,11 @@ namespace PrototypeCardGame.Games
     public class DuelManager : Systems.MessageSender
     {
         /// <summary>
+        /// 
+        /// </summary>
+        private readonly int InitialHandCardsNumber = 3;
+
+        /// <summary>
         /// フェーズ変更 ID
         /// </summary>
         public enum PhaseTo : int
@@ -210,6 +215,10 @@ namespace PrototypeCardGame.Games
                         switch(task.Manipulation)
                         {
                             case AI.GameAI.CardManipulation.Sacrifice:
+                                foreach (var card in task.Cards)
+                                {
+                                    offenser.Field.AreaCardToCemetery((BattlerCard)card);
+                                }
                                 Context.SendDuelMessage<DuelSacrificeCardInAreaMessage>(message =>
                                 {
                                     message.Cards = task.Cards;
@@ -251,7 +260,10 @@ namespace PrototypeCardGame.Games
                     var offenseCard = offense.Field.CardAreas[index];
                     var defenseCard = defense.Field.CardAreas[index];
 
-                    if (offenseCard == null) continue;
+                    if (offenseCard == null || offenseCard.CurrentStatus.Attack <= 0)
+                    {
+                        continue;
+                    }
 
                     if (defenseCard == null)
                     {
@@ -401,6 +413,11 @@ namespace PrototypeCardGame.Games
                     new CardWarrior(),
                     new CardWarrior(),
                     new CardWizard(),
+                    new CardSlime(),
+                    new CardSlime(),
+                    new CardSlime(),
+                    new CardSlime(),
+                    new CardSlime(),
                     new CardSlime()
                 };
                 deck.Shuffle();
@@ -421,6 +438,11 @@ namespace PrototypeCardGame.Games
                     new CardSlime(),
                     new CardSlime(),
                     new CardSlime(),
+                    new CardSlime(),
+                    new CardSlime(),
+                    new CardSlime(),
+                    new CardSlime(),
+                    new CardSlime(),
                     new CardSlime()
                 };
                 deck.Shuffle();
@@ -431,6 +453,12 @@ namespace PrototypeCardGame.Games
                     Field = new PlayField(deck),
                     Life = 10
                 };
+            }
+
+            for (int index = 0; index < InitialHandCardsNumber; ++index)
+            {
+                _player.Field.DrawFromDeck();
+                _opponent.Field.DrawFromDeck();
             }
 
             _player.AI = new AI.SimpleAI(_player, _opponent);

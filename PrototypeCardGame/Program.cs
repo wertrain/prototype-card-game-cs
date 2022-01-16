@@ -39,6 +39,15 @@ namespace PrototypeCardGame
                         Console.Write($"{duelMessage.Offenser.Name} のカード {duelMessage.Card.GetType().Name} の攻撃により ");
                         Console.WriteLine($"{duelMessage.Defenser.Name} のカード {duelMessage.DamagedCard.GetType().Name} は {duelMessage.Damage} ダメージ！");
                         break;
+                    case Games.DuelSacrificeCardInAreaMessage duelMessage:
+                        Console.Write($"{duelMessage.Offenser.Name} はカード "); 
+                        foreach (var card in duelMessage.Cards)
+                        {
+                            Console.Write($"{card.GetType().Name} ");
+                        }
+
+                        Console.WriteLine($"を生贄に捧げ...");
+                        break;
                     case Games.DuelSetCardInAreaMessage duelMessage:
                         Console.WriteLine($"{duelMessage.Offenser.Name} は {duelMessage.Card.GetType().Name} を召喚！");
                         break;

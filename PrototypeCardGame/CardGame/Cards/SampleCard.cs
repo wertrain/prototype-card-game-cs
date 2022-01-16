@@ -32,7 +32,7 @@ namespace PrototypeCardGame.Cards
             {
                 Cost = 0,
                 Life = 1,
-                Attack = 1,
+                Attack = 0,
             };
         }
     }
@@ -48,7 +48,7 @@ namespace PrototypeCardGame.Cards
             {
                 Cost = 1,
                 Life = 2,
-                Attack = 1,
+                Attack = 3,
             };
         }
     }
