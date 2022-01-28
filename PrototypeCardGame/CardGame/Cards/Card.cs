@@ -171,7 +171,7 @@ namespace PrototypeCardGame.Cards
         }
 
         /// <summary>
-        /// 
+        /// カードが配置されていないインデックスを取得
         /// </summary>
         /// <returns></returns>
 
